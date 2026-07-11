@@ -9,6 +9,7 @@ internal static class NicParser
     {
         Gender gender;
         int dayNumber;
+        DateOnly birthDate;
 
         if(nic == null)
         {
@@ -22,11 +23,15 @@ internal static class NicParser
 
         if (nic.Length == NewNicLength && nic.All(char.IsDigit))
         {
+            int birthYear = int.Parse(nic[..4]);
             int rawDayNumber = int.Parse(nic.Substring(4, 3));
             (gender, dayNumber) = ParseDayNumber(rawDayNumber);
+            birthDate = GetBirthDate(birthYear, dayNumber);
+
             return new Nic
             {
-                BirthYear = int.Parse(nic[..4]),
+                BirthYear = birthYear,
+                BirthDate = birthDate,
                 Gender = gender
             };
         }
@@ -34,11 +39,15 @@ internal static class NicParser
         if (nic.Length == OldNicLength && (nic[..9].All(char.IsDigit)) && (nic.EndsWith("V", StringComparison.OrdinalIgnoreCase) || nic.EndsWith("X", StringComparison.OrdinalIgnoreCase)))
         {
             var year = int.Parse(nic[..2]);
+            int birthYear = year + 1900;
             int rawDayNumber = int.Parse(nic.Substring(2, 3));
             (gender, dayNumber) = ParseDayNumber(rawDayNumber);
+            birthDate = GetBirthDate(birthYear, dayNumber);
+
             return new Nic
             {
-                BirthYear =  year + 1900,
+                BirthYear = birthYear,
+                BirthDate = birthDate,
                 Gender = gender
             };
         }
@@ -68,5 +77,16 @@ internal static class NicParser
         }
 
         return (gender, dayNumber);
+    }
+
+    private static DateOnly GetBirthDate(int year, int dayNumber)
+    {
+        var daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
+        if (dayNumber > daysInYear)
+        {
+            throw new ArgumentException("Invalid day number in NIC.", nameof(dayNumber));
+        }
+
+        return new DateOnly(year, 1, 1).AddDays(dayNumber - 1);
     }
 }
