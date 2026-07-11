@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
 
     <PackageId>LkNic</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.0-alpha.1</Version>
     <Authors>Kasun Hettiarachchi</Authors>
     <Description>Sri Lankan NIC parse and validator</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
