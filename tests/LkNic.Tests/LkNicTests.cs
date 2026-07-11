@@ -35,4 +35,25 @@ public class LkNicTests
     {
         Assert.Throws<ArgumentException>(() => LkNic.Parse(nic));
     }
+
+    [Theory]
+    [InlineData("200012345678", Gender.Male)]
+    [InlineData("200055678901", Gender.Female)]
+    [InlineData("752345678V", Gender.Male)]
+    [InlineData("752678901V", Gender.Male)]
+    public void Parse_ShouldReturnCorrectGender_ForValidNic(string nic, Gender expectedGender)
+    {
+        var result = LkNic.Parse(nic);
+        Assert.Equal(expectedGender, result.Gender);
+    }
+
+    [Theory]
+    [InlineData("900001234V")]
+    [InlineData("903671234V")]
+    [InlineData("905001234V")]
+    [InlineData("908671234V")]
+    public void Parse_ShouldThrowException_ForInvalidDayNumber(string nicNumber)
+    {
+        Assert.Throws<ArgumentException>(() => LkNic.Parse(nicNumber));
+    }
 }
