@@ -6,4 +6,9 @@ public static class LkNic
     {
         return NicParser.Parse(nic);
     }
+
+    public static bool TryParse(string nicNumber, out Nic? nic)
+    {
+        return NicParser.TryParse(nicNumber, out nic);
+    }
 }

@@ -53,6 +53,31 @@ public class LkNicTests
         Assert.Throws<ArgumentException>(() => LkNic.Parse(nic));
     }
 
+    [Fact]
+    public void TryParse_ShouldReturnTrueAndParsedNic_WhenNicIsValid()
+    {
+        var isValid = LkNic.TryParse("200006012345", out var nic);
+
+        Assert.True(isValid);
+        Assert.NotNull(nic);
+        Assert.Equal(2000, nic.BirthYear);
+        Assert.Equal(new DateOnly(2000, 2, 29), nic.BirthDate);
+        Assert.Equal(Gender.Male, nic.Gender);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("199936612345")]
+    [InlineData("123456789Z")]
+    public void TryParse_ShouldReturnFalseAndNullNic_WhenNicIsInvalid(string? nicNumber)
+    {
+        var isValid = LkNic.TryParse(nicNumber!, out var nic);
+
+        Assert.False(isValid);
+        Assert.Null(nic);
+    }
+
     [Theory]
     [InlineData("200012345678", Gender.Male)]
     [InlineData("200055678901", Gender.Female)]

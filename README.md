@@ -1,8 +1,8 @@
 # LkNic
 
-LkNic is a small .NET library for parsing and validating Sri Lankan National Identity Card numbers.
+LkNic is a .NET library for parsing and validating Sri Lankan National Identity Card numbers.
 
-This early alpha currently validates the basic NIC format and extracts the birth year.
+This early alpha currently validates the basic NIC format and extracts the birth year, birth date, and gender.
 
 ## Install
 
@@ -18,6 +18,17 @@ using LkNic;
 var nic = LkNic.Parse("199912345678");
 
 Console.WriteLine(nic.BirthYear); // 1999
+Console.WriteLine(nic.BirthDate); // 1999-05-01
+Console.WriteLine(nic.Gender);    // Male
+```
+
+For user input, use `TryParse` to avoid exceptions during normal validation:
+
+```csharp
+if (LkNic.TryParse("199912345678", out var parsedNic))
+{
+    Console.WriteLine(parsedNic.BirthDate);
+}
 ```
 
 ## Supported Formats
@@ -31,9 +42,11 @@ Console.WriteLine(nic.BirthYear); // 1999
 public class Nic
 {
     public int BirthYear { get; init; }
+    public DateOnly BirthDate { get; init; }
+    public Gender Gender { get; init; }
 }
 ```
 
 ## Notes
 
-This package is still in alpha. More NIC details, such as birth date and gender, are planned for future versions.
+This package is still in alpha. The public API and validation rules may change before a stable release.

@@ -5,61 +5,93 @@ internal static class NicParser
     private const int OldNicLength = 10;
     private const int NewNicLength = 12;
 
-    public static Nic Parse(string nic)
+    public static Nic Parse(string nicNumber)
     {
-        Gender gender;
-        int dayNumber;
-        DateOnly birthDate;
-
-        if(nic == null)
+        if (nicNumber is null)
         {
-            ArgumentNullException.ThrowIfNull(nic);
+            throw new ArgumentNullException(nameof(nicNumber));
         }
 
-        if(string.IsNullOrWhiteSpace(nic))
+        if (!TryParseCore(nicNumber, out var nic))
         {
-            throw new ArgumentException("NIC cannot be empty or whitespace.", nameof(nic));
-        }
-
-        if (nic.Length == NewNicLength && nic.All(char.IsDigit))
-        {
-            int birthYear = int.Parse(nic[..4]);
-            int rawDayNumber = int.Parse(nic.Substring(4, 3));
-            (gender, dayNumber) = ParseDayNumber(rawDayNumber);
-            birthDate = GetBirthDate(birthYear, dayNumber);
-
-            return new Nic
+            if (string.IsNullOrWhiteSpace(nicNumber))
             {
-                BirthYear = birthYear,
-                BirthDate = birthDate,
-                Gender = gender
-            };
-        }
-        
-        if (nic.Length == OldNicLength && (nic[..9].All(char.IsDigit)) && (nic.EndsWith("V", StringComparison.OrdinalIgnoreCase) || nic.EndsWith("X", StringComparison.OrdinalIgnoreCase)))
-        {
-            var year = int.Parse(nic[..2]);
-            int birthYear = year + 1900;
-            int rawDayNumber = int.Parse(nic.Substring(2, 3));
-            (gender, dayNumber) = ParseDayNumber(rawDayNumber);
-            birthDate = GetBirthDate(birthYear, dayNumber);
+                throw new ArgumentException("NIC cannot be empty or whitespace.", nameof(nicNumber));
+            }
 
-            return new Nic
-            {
-                BirthYear = birthYear,
-                BirthDate = birthDate,
-                Gender = gender
-            };
+            throw new ArgumentException("Invalid NIC", nameof(nicNumber));
         }
-        
-        throw new ArgumentException("Invalid NIC"); 
+
+        return nic!;
     }
 
-    private static (Gender Gender, int DayNumber) ParseDayNumber(int rawDayNumber)
+    public static bool TryParse(string nicNumber, out Nic? nic)
     {
-        Gender gender;
-        int dayNumber;
+        return TryParseCore(nicNumber, out nic);
+    }
 
+    private static bool TryParseCore(string nicNumber, out Nic? nic)
+    {
+        nic = null;
+
+        if (string.IsNullOrWhiteSpace(nicNumber))
+        {
+            return false;
+        }
+
+        if (nicNumber.Length == NewNicLength && nicNumber.All(char.IsDigit))
+        {
+            if (!int.TryParse(nicNumber[..4], out var birthYear)
+                || !int.TryParse(nicNumber.Substring(4, 3), out var rawDayNumber)
+                || !TryParseDayNumber(rawDayNumber, out var gender, out var dayNumber)
+                || !TryGetBirthDate(birthYear, dayNumber, out var birthDate))
+            {
+                return false;
+            }
+
+            nic = new Nic
+            {
+                BirthYear = birthYear,
+                BirthDate = birthDate,
+                Gender = gender
+            };
+
+            return true;
+        }
+        
+        if (nicNumber.Length == OldNicLength
+            && nicNumber[..9].All(char.IsDigit)
+            && (nicNumber.EndsWith("V", StringComparison.OrdinalIgnoreCase)
+                || nicNumber.EndsWith("X", StringComparison.OrdinalIgnoreCase)))
+        {
+            if (!int.TryParse(nicNumber[..2], out var year)
+                || !int.TryParse(nicNumber.Substring(2, 3), out var rawDayNumber))
+            {
+                return false;
+            }
+
+            var birthYear = year + 1900;
+            if (!TryParseDayNumber(rawDayNumber, out var gender, out var dayNumber)
+                || !TryGetBirthDate(birthYear, dayNumber, out var birthDate))
+            {
+                return false;
+            }
+
+            nic = new Nic
+            {
+                BirthYear = birthYear,
+                BirthDate = birthDate,
+                Gender = gender
+            };
+
+            return true;
+        }
+        
+        return false;
+    }
+
+    private static bool TryParseDayNumber(int rawDayNumber, out Gender gender, out int dayNumber)
+    {
         if (rawDayNumber > 500)
         {
             gender = Gender.Female;
@@ -71,22 +103,32 @@ internal static class NicParser
             dayNumber = rawDayNumber;
         }
 
-        if(dayNumber < 1 || dayNumber > 366)
+        if (dayNumber < 1 || dayNumber > 366)
         {
-            throw new ArgumentException("Invalid day number in NIC.");
+            return false;
         }
 
-        return (gender, dayNumber);
+        return true;
     }
 
-    private static DateOnly GetBirthDate(int year, int dayNumber)
+    private static bool TryGetBirthDate(int year, int dayNumber, out DateOnly birthDate)
     {
+        birthDate = default;
+
         var daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
         if (dayNumber > daysInYear)
         {
-            throw new ArgumentException("Invalid day number in NIC.", nameof(dayNumber));
+            return false;
         }
 
-        return new DateOnly(year, 1, 1).AddDays(dayNumber - 1);
+        try
+        {
+            birthDate = new DateOnly(year, 1, 1).AddDays(dayNumber - 1);
+            return true;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return false;
+        }
     }
 }
