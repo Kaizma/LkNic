@@ -1,9 +1,14 @@
+using System.Text.RegularExpressions;
+
 namespace LkNic;
 
 internal static class NicParser
 {
-    private const int OldNicLength = 10;
-    private const int NewNicLength = 12;
+    [GeneratedRegex(@"^[0-9]{12}$")]
+    private static partial Regex NewNicRegex();
+
+    [GeneratedRegex(@"^[0-9]{9}[vVxX]$")]
+    private static partial Regex OldNicRegex();
 
     public static Nic Parse(string nicNumber)
     {
@@ -25,12 +30,12 @@ internal static class NicParser
         return nic!;
     }
 
-    public static bool TryParse(string nicNumber, out Nic? nic)
+    public static bool TryParse(string? nicNumber, out Nic? nic)
     {
         return TryParseCore(nicNumber, out nic);
     }
 
-    private static bool TryParseCore(string nicNumber, out Nic? nic)
+    private static bool TryParseCore(string? nicNumber, out Nic? nic)
     {
         nic = null;
 
@@ -39,49 +44,59 @@ internal static class NicParser
             return false;
         }
 
-        if (nicNumber.Length == NewNicLength && nicNumber.All(char.IsDigit))
+        if (NewNicRegex().IsMatch(nicNumber))
         {
-            if (!int.TryParse(nicNumber[..4], out var birthYear)
-                || !int.TryParse(nicNumber.Substring(4, 3), out var rawDayNumber)
-                || !TryParseDayNumber(rawDayNumber, out var gender, out var dayNumber)
-                || !TryGetBirthDate(birthYear, dayNumber, out var birthDate))
+            var birthYear = int.Parse(nicNumber[..4]);
+            var rawDayNumber = int.Parse(nicNumber[4..7]);
+
+            if (!TryParseDayNumber(rawDayNumber, out var gender, out var dayNumber))
             {
                 return false;
             }
+
+            if (!TryGetBirthDate(birthYear, dayNumber, out var birthDate))
+            {
+                return false;
+            }
+
+            int ageInYears = CalculateAgeInYears(birthDate);
 
             nic = new Nic
             {
                 BirthYear = birthYear,
                 BirthDate = birthDate,
-                Gender = gender
+                Gender = gender,
+                AgeInYears = ageInYears
             };
 
             return true;
         }
         
-        if (nicNumber.Length == OldNicLength
-            && nicNumber[..9].All(char.IsDigit)
-            && (nicNumber.EndsWith("V", StringComparison.OrdinalIgnoreCase)
-                || nicNumber.EndsWith("X", StringComparison.OrdinalIgnoreCase)))
+        else if (OldNicRegex().IsMatch(nicNumber))
         {
-            if (!int.TryParse(nicNumber[..2], out var year)
-                || !int.TryParse(nicNumber.Substring(2, 3), out var rawDayNumber))
+            var year = int.Parse(nicNumber[..2]);
+            var rawDayNumber = int.Parse(nicNumber[2..5]);
+            
+            if (!TryParseDayNumber(rawDayNumber, out var gender, out var dayNumber))
+            {
+                return false;
+            }
+                        
+            var birthYear = 1900 + year;
+
+            if (!TryGetBirthDate(birthYear, dayNumber, out var birthDate))
             {
                 return false;
             }
 
-            var birthYear = year + 1900;
-            if (!TryParseDayNumber(rawDayNumber, out var gender, out var dayNumber)
-                || !TryGetBirthDate(birthYear, dayNumber, out var birthDate))
-            {
-                return false;
-            }
+            int ageInYears = CalculateAgeInYears(birthDate);
 
             nic = new Nic
             {
                 BirthYear = birthYear,
                 BirthDate = birthDate,
-                Gender = gender
+                Gender = gender,
+                AgeInYears = ageInYears
             };
 
             return true;
@@ -121,14 +136,18 @@ internal static class NicParser
             return false;
         }
 
-        try
+        birthDate = new DateOnly(year, 1, 1).AddDays(dayNumber - 1);
+        return true;
+    }
+
+    private static int CalculateAgeInYears(DateOnly birthDate)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var age = today.Year - birthDate.Year;
+        if (birthDate.Month > today.Month || (birthDate.Month == today.Month && birthDate.Day > today.Day))
         {
-            birthDate = new DateOnly(year, 1, 1).AddDays(dayNumber - 1);
-            return true;
+            age--;
         }
-        catch (ArgumentOutOfRangeException)
-        {
-            return false;
-        }
+        return age;
     }
 }
