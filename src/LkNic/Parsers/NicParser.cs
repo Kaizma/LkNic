@@ -63,6 +63,7 @@ internal static class NicParser
 
             nic = new Nic
             {
+                Type = NicType.New,
                 BirthYear = birthYear,
                 BirthDate = birthDate,
                 Gender = gender,
@@ -93,6 +94,7 @@ internal static class NicParser
 
             nic = new Nic
             {
+                Type = NicType.Old,
                 BirthYear = birthYear,
                 BirthDate = birthDate,
                 Gender = gender,
