@@ -2,6 +2,7 @@ namespace LkNic;
 
 public class Nic
 {
+    public string Value { get; init; } = string.Empty;
     public NicType Type { get; init; }
     public int BirthYear { get; init; }
     public DateOnly BirthDate { get; init; }

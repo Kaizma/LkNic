@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace LkNic;
 
-internal static class NicParser
+internal static partial class NicParser
 {
     [GeneratedRegex(@"^[0-9]{12}$")]
     private static partial Regex NewNicRegex();
@@ -44,6 +44,8 @@ internal static class NicParser
             return false;
         }
 
+        nicNumber = nicNumber.Trim().ToUpperInvariant();
+
         if (NewNicRegex().IsMatch(nicNumber))
         {
             var birthYear = int.Parse(nicNumber[..4]);
@@ -63,6 +65,7 @@ internal static class NicParser
 
             nic = new Nic
             {
+                Value = nicNumber,
                 Type = NicType.New,
                 BirthYear = birthYear,
                 BirthDate = birthDate,
@@ -72,17 +75,17 @@ internal static class NicParser
 
             return true;
         }
-        
+
         else if (OldNicRegex().IsMatch(nicNumber))
         {
             var year = int.Parse(nicNumber[..2]);
             var rawDayNumber = int.Parse(nicNumber[2..5]);
-            
+
             if (!TryParseDayNumber(rawDayNumber, out var gender, out var dayNumber))
             {
                 return false;
             }
-                        
+
             var birthYear = 1900 + year;
 
             if (!TryGetBirthDate(birthYear, dayNumber, out var birthDate))
@@ -94,6 +97,7 @@ internal static class NicParser
 
             nic = new Nic
             {
+                Value = nicNumber,
                 Type = NicType.Old,
                 BirthYear = birthYear,
                 BirthDate = birthDate,
@@ -103,7 +107,7 @@ internal static class NicParser
 
             return true;
         }
-        
+
         return false;
     }
 
